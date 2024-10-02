@@ -1,6 +1,6 @@
-const express = require('express');
-const whois = require('whois-json');
-const cors = require('cors');
+import express from 'express';
+import whois from 'whois-json'; // You can use whois-json or any other library for WHOIS lookup
+import cors from 'cors';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -15,7 +15,7 @@ app.get('/api/whois', async (req, res) => {
   }
 
   try {
-    const data = await whois(domain);
+    const data = await whois(domain as string);
     res.status(200).json({ domain, whois: data });
   } catch (error) {
     res.status(500).json({ error: 'Error performing WHOIS lookup' });
@@ -30,4 +30,4 @@ if (require.main === module) {
 }
 
 // Export the app for Vercel to use
-module.exports = app;
+export default app;
