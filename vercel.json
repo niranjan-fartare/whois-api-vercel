@@ -5,5 +5,11 @@
       "src": "api/whois.js",
       "use": "@vercel/node"
     }
+  ],
+  "routes": [
+    {
+      "src": "/api/whois",
+      "dest": "api/whois.js"
+    }
   ]
 }
