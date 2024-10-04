@@ -1,11 +1,17 @@
 import express from 'express';
-import whois from 'whois-json'; // You can use whois-json or any other library for WHOIS lookup
+import whois from 'whois-json';
 import cors from 'cors';
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-app.use(cors());
+const corsOptions = {
+  origin: 'https://hostingchecker.co',
+  methods: ['GET'],
+  allowedHeaders: ['Content-Type'],
+};
+
+app.use(cors(corsOptions));
 
 app.get('/api/whois', async (req, res) => {
   const domain = req.query.domain;
@@ -22,12 +28,9 @@ app.get('/api/whois', async (req, res) => {
   }
 });
 
-// Start the server (for local testing)
 if (require.main === module) {
   app.listen(port, () => {
     console.log(`WHOIS API running at http://localhost:${port}`);
   });
 }
-
-// Export the app for Vercel to use
 export default app;
