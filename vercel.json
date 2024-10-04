@@ -6,12 +6,6 @@
       "use": "@vercel/node"
     }
   ],
-  "routes": [
-    {
-      "src": "/api/whois",
-      "dest": "api/index.ts"
-    }
-  ],
   "headers": [
     {
       "source": "/api/whois",
