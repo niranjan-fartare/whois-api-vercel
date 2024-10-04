@@ -11,5 +11,24 @@
       "src": "/api/whois",
       "dest": "api/index.ts"
     }
+  ],
+  "headers": [
+    {
+      "source": "/api/whois",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "https://hostingchecker.co" 
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type"
+        }
+      ]
+    }
   ]
 }
