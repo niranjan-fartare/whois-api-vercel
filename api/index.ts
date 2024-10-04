@@ -6,7 +6,10 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 const corsOptions = {
-  origin: 'https://hostingchecker.co',
+  origin: [
+    'https://hostingchecker.co',
+    'https://www.hostingchecker.co'
+  ],
   methods: ['GET'],
   allowedHeaders: ['Content-Type'],
 };
