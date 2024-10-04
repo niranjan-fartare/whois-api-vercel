@@ -1,28 +1,15 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "api/index.ts",
-      "use": "@vercel/node"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/api/whois",
-      "headers": [
+    "version": 2,
+    "builds": [
         {
-          "key": "Access-Control-Allow-Origin",
-          "value": "https://hostingchecker.co" 
-        },
-        {
-          "key": "Access-Control-Allow-Methods",
-          "value": "GET"
-        },
-        {
-          "key": "Access-Control-Allow-Headers",
-          "value": "Content-Type"
+            "src": "api/index.ts",
+            "use": "@vercel/node"
         }
-      ]
-    }
-  ]
+    ],
+    "routes": [
+        {
+            "src": "/api/whois",
+            "dest": "api/index.ts"
+        }
+    ]
 }
