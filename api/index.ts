@@ -1,6 +1,5 @@
 import express from 'express';
-import whois from 'whois';
-import { promisify } from 'util';
+import axios from 'axios';
 import cors from 'cors';
 
 const app = express();
@@ -19,62 +18,56 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-const whoisLookup = promisify(whois.lookup);
+const IANA_RDAP_BOOTSTRAP_URL = 'https://data.iana.org/rdap/dns.json';
 
-const parseWhoisData = (rawData: string): Record<string, string> => {
-  const parsedData: Record<string, string> = {};
-  const lines = rawData.split('\n');
+async function getRDAPServer(domain: string): Promise<string> {
+  const tld = domain.split('.').pop();
+  const response = await axios.get(IANA_RDAP_BOOTSTRAP_URL);
+  const bootstrapData = response.data;
 
-  for (const line of lines) {
-    const colonIndex = line.indexOf(':');
-    if (colonIndex !== -1) {
-      const key = line.slice(0, colonIndex).trim();
-      const value = line.slice(colonIndex + 1).trim();
-      if (key && value) {
-        parsedData[key] = value;
-      }
+  for (const entry of bootstrapData.services) {
+    if (entry[0].includes(tld)) {
+      return entry[1][0];
     }
   }
 
-  return parsedData;
-};
+  throw new Error(`No RDAP server found for TLD: ${tld}`);
+}
 
-const performWhoisLookup = async (domain: string, retries = 3): Promise<Record<string, string>> => {
+async function performRDAPLookup(domain: string, retries = 3): Promise<any> {
   try {
-    const rawData = await whoisLookup(domain);
-    if (!rawData) {
-      throw new Error('Empty WHOIS data');
-    }
-    return parseWhoisData(rawData);
+    const rdapServer = await getRDAPServer(domain);
+    const response = await axios.get(`${rdapServer}/domain/${domain}`);
+    return response.data;
   } catch (error) {
     if (retries > 0) {
-      console.log(`Retrying WHOIS lookup for ${domain}. Attempts left: ${retries - 1}`);
+      console.log(`Retrying RDAP lookup for ${domain}. Attempts left: ${retries - 1}`);
       await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retrying
-      return performWhoisLookup(domain, retries - 1);
+      return performRDAPLookup(domain, retries - 1);
     } else {
-      console.error(`Error performing WHOIS lookup for ${domain}:`, error);
+      console.error(`Error performing RDAP lookup for ${domain}:`, error);
       throw error;
     }
   }
-};
+}
 
-app.get('/api/whois', async (req, res) => {
+app.get('/api/lookup', async (req, res) => {
   const domain = req.query.domain as string;
   if (!domain) {
     return res.status(400).json({ error: 'Domain parameter is required' });
   }
 
   try {
-    const data = await performWhoisLookup(domain);
-    res.status(200).json({ domain, whois: data });
+    const data = await performRDAPLookup(domain);
+    res.status(200).json({ domain, rdap: data });
   } catch (error) {
-    res.status(500).json({ error: 'Error performing WHOIS lookup', details: error.message });
+    res.status(500).json({ error: 'Error performing RDAP lookup', details: error.message });
   }
 });
 
 if (require.main === module) {
   app.listen(port, () => {
-    console.log(`WHOIS API running at http://localhost:${port}`);
+    console.log(`Domain Lookup API running at http://localhost:${port}`);
   });
 }
 
