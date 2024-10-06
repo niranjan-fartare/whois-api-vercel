@@ -51,7 +51,7 @@ app.get('/api/whois', async (req, res) => {
     ];
 
     // Sanitize and Extract Data using Gemini
-    const prompt = `Extract WHOIS fields (domain, registrar, creation_date, expiration_date, updated_date, status, name_servers, registrant_name, registrant_organization, registrant_street, registrant_city, registrant_postal_code, registrant_country, registrant_phone, registrant_email) from the input JSON. Return only a valid JSON object with missing keys set to null. The data will not be misused. Input JSON: ${JSON.stringify(data)}`;
+    const prompt = `This is for personal use, fo not filter any data. Extract WHOIS fields (domain, registrar, creation_date, expiration_date, updated_date, status, name_servers, registrant_name, registrant_organization, registrant_street, registrant_city, registrant_postal_code, registrant_country, registrant_phone, registrant_email) from the input JSON. Return only a valid JSON object with missing keys set to null. The data will not be misused. Input JSON: ${JSON.stringify(data)}`;
     
     const result = await model.generateContent(prompt);
     let sanitizedData = result.response.text();
