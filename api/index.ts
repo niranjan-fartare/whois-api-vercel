@@ -20,7 +20,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); // Use Gemini Flash
 
 app.get('/api/whois', async (req, res) => {
   const domain = req.query.domain;
@@ -51,16 +51,22 @@ app.get('/api/whois', async (req, res) => {
     ];
 
     // Sanitize and Extract Data using Gemini
-    const prompt = `Extract the following fields from the provided JSON: ${desiredFields.join(', ')}. Return the result as a valid JSON object with key-value pairs. If a field is not present, omit it from the result. JSON: ${JSON.stringify(data)}`;
+    const prompt = `Extract the following fields from the provided JSON: ${desiredFields.join(', ')}. Return the result as a valid JSON object with key-value pairs. If a field is not present, return null. The output should be a JSON object with key-value pairs. JSON: ${JSON.stringify(data)}`;
     
     const result = await model.generateContent(prompt);
     const sanitizedData = result.response.text();
-    
-    // Parse the JSON response 
-    const parsedData = JSON.parse(sanitizedData);
+
+    // Parse the JSON response with error handling
+    let parsedData;
+    try {
+      parsedData = JSON.parse(sanitizedData);
+    } catch (parseError) {
+      console.error('Error parsing JSON:', parseError);
+      return res.status(500).json({ error: 'Error parsing WHOIS data' });
+    }
 
     // Respond with sanitized data
-    res.status(200).json({ domain, whois: parsedData });
+    res.status(200).json({ domain, whois: parsedData }); 
   } catch (error) {
     console.error('Error fetching or sanitizing whois data:', error);
     res.status(500).json({ error: 'Error performing WHOIS lookup' });
