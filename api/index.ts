@@ -1,5 +1,4 @@
 import express from 'express';
-import whoisJson from 'whois-json';
 import whois from 'whois';
 import { promisify } from 'util';
 import cors from 'cors';
@@ -22,49 +21,40 @@ app.use(cors(corsOptions));
 
 const whoisLookup = promisify(whois.lookup);
 
-const performWhoisJsonLookup = async (domain: string): Promise<any> => {
-  try {
-    const data = await whoisJson(domain);
-    if (!data || Object.keys(data).length === 0) {
-      throw new Error('Empty WHOIS data from whois-json');
-    }
-    return data;
-  } catch (error) {
-    console.error('Error in whois-json lookup:', error);
-    throw error;
-  }
-};
+const parseWhoisData = (rawData: string): Record<string, string> => {
+  const parsedData: Record<string, string> = {};
+  const lines = rawData.split('\n');
 
-const performWhoisLookup = async (domain: string): Promise<any> => {
-  try {
-    const data = await whoisLookup(domain);
-    if (!data) {
-      throw new Error('Empty WHOIS data from whois');
-    }
-    // Parse the raw WHOIS data into a structured format
-    // This is a simple example and may need to be adjusted based on the actual data format
-    const parsedData = data.split('\n').reduce((acc, line) => {
-      const [key, value] = line.split(':').map(s => s.trim());
+  for (const line of lines) {
+    const colonIndex = line.indexOf(':');
+    if (colonIndex !== -1) {
+      const key = line.slice(0, colonIndex).trim();
+      const value = line.slice(colonIndex + 1).trim();
       if (key && value) {
-        acc[key] = value;
+        parsedData[key] = value;
       }
-      return acc;
-    }, {});
-    return parsedData;
-  } catch (error) {
-    console.error('Error in whois lookup:', error);
-    throw error;
+    }
   }
+
+  return parsedData;
 };
 
-const performWhoisLookupWithFallback = async (domain: string): Promise<any> => {
+const performWhoisLookup = async (domain: string, retries = 3): Promise<Record<string, string>> => {
   try {
-    // Try whois-json first
-    return await performWhoisJsonLookup(domain);
+    const rawData = await whoisLookup(domain);
+    if (!rawData) {
+      throw new Error('Empty WHOIS data');
+    }
+    return parseWhoisData(rawData);
   } catch (error) {
-    console.log('Falling back to whois lookup');
-    // If whois-json fails, fallback to whois
-    return await performWhoisLookup(domain);
+    if (retries > 0) {
+      console.log(`Retrying WHOIS lookup for ${domain}. Attempts left: ${retries - 1}`);
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retrying
+      return performWhoisLookup(domain, retries - 1);
+    } else {
+      console.error(`Error performing WHOIS lookup for ${domain}:`, error);
+      throw error;
+    }
   }
 };
 
@@ -75,10 +65,9 @@ app.get('/api/whois', async (req, res) => {
   }
 
   try {
-    const data = await performWhoisLookupWithFallback(domain);
+    const data = await performWhoisLookup(domain);
     res.status(200).json({ domain, whois: data });
   } catch (error) {
-    console.error(`Error performing WHOIS lookup for ${domain}:`, error);
     res.status(500).json({ error: 'Error performing WHOIS lookup', details: error.message });
   }
 });
