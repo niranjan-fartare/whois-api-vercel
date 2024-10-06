@@ -20,6 +20,6 @@
   "devDependencies": {
     "typescript": "^5.0.0",
     "@types/cors": "^2.8.12",
-    "gemini-api": "^2.5.1" 
+    "gemini-api": "^2.0.0" 
   }
 }
