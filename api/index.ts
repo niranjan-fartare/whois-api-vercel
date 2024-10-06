@@ -1,7 +1,7 @@
 import express from 'express';
 import whois from 'whois-json';
 import cors from 'cors';
-import { GoogleGenerativeAI } from '@google/generative-ai'; 
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -24,14 +24,13 @@ const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 app.get('/api/whois', async (req, res) => {
   const domain = req.query.domain;
-
   if (!domain) {
     return res.status(400).json({ error: 'Domain parameter is required' });
   }
 
   try {
     const data = await whois(domain as string);
-
+    
     // Define the fields you want to return
     const desiredFields = [
       'domain', 
@@ -52,13 +51,16 @@ app.get('/api/whois', async (req, res) => {
     ];
 
     // Sanitize and Extract Data using Gemini
-    const sanitizedData = await model.generateContent(`Extract the following fields from the provided JSON: ${desiredFields.join(', ')}. JSON: ${JSON.stringify(data)}`);
-
+    const prompt = `Extract the following fields from the provided JSON: ${desiredFields.join(', ')}. Return the result as a valid JSON object with key-value pairs. If a field is not present, omit it from the result. JSON: ${JSON.stringify(data)}`;
+    
+    const result = await model.generateContent(prompt);
+    const sanitizedData = result.response.text();
+    
     // Parse the JSON response 
-    const parsedData = JSON.parse(sanitizedData.response.text());
+    const parsedData = JSON.parse(sanitizedData);
 
     // Respond with sanitized data
-    res.status(200).json({ domain, whois: parsedData }); 
+    res.status(200).json({ domain, whois: parsedData });
   } catch (error) {
     console.error('Error fetching or sanitizing whois data:', error);
     res.status(500).json({ error: 'Error performing WHOIS lookup' });
@@ -70,4 +72,5 @@ if (require.main === module) {
     console.log(`WHOIS API running at http://localhost:${port}`);
   });
 }
+
 export default app;
