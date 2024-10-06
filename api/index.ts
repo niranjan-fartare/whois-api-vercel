@@ -51,7 +51,7 @@ app.get('/api/whois', async (req, res) => {
     ];
 
     // Sanitize and Extract Data using Gemini
-    const prompt = `Extract the following fields from the provided JSON: ${desiredFields.join(', ')}. Return the result as a valid JSON object with key-value pairs, without any markdown formatting. If a field is not present, omit it from the result. JSON: ${JSON.stringify(data)}`;
+    const prompt = `Extract the following fields from the provided JSON: ${desiredFields.join(', ')}. Return the result as a valid JSON object with key-value pairs, without any markdown formatting. If a field is not present, return null. JSON: ${JSON.stringify(data)}`;
     
     const result = await model.generateContent(prompt);
     let sanitizedData = result.response.text();
