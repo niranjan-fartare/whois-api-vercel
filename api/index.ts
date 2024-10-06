@@ -20,7 +20,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
 
 app.get('/api/whois', async (req, res) => {
   const domain = req.query.domain;
