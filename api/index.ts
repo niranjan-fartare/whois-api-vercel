@@ -54,8 +54,11 @@ app.get('/api/whois', async (req, res) => {
     // Sanitize and Extract Data using Gemini
     const sanitizedData = await model.generateContent(`Extract the following fields from the provided JSON: ${desiredFields.join(', ')}. JSON: ${JSON.stringify(data)}`);
 
+    // Parse the JSON response 
+    const parsedData = JSON.parse(sanitizedData.response.text());
+
     // Respond with sanitized data
-    res.status(200).json({ domain, whois: sanitizedData.response.text() }); 
+    res.status(200).json({ domain, whois: parsedData }); 
   } catch (error) {
     console.error('Error fetching or sanitizing whois data:', error);
     res.status(500).json({ error: 'Error performing WHOIS lookup' });
