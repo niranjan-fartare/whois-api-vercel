@@ -8,7 +8,7 @@
     ],
     "routes": [
         {
-            "src": "/api/whois",
+            "src": "/api/lookup",
             "dest": "api/index.ts"
         }
     ]
