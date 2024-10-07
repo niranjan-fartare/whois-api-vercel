@@ -1,6 +1,6 @@
 import express from 'express';
-import axios from 'axios';
 import cors from 'cors';
+import https from 'https';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -20,10 +20,26 @@ app.use(cors(corsOptions));
 
 const IANA_RDAP_BOOTSTRAP_URL = 'https://data.iana.org/rdap/dns.json';
 
-async function getRDAPServer(domain: string): Promise<string> {
+async function getRDAPServer(domain) {
   const tld = domain.split('.').pop();
-  const response = await axios.get(IANA_RDAP_BOOTSTRAP_URL);
-  const bootstrapData = response.data;
+
+  const bootstrapData = await new Promise((resolve, reject) => {
+    https.get(IANA_RDAP_BOOTSTRAP_URL, (response) => {
+      let data = '';
+
+      response.on('data', (chunk) => {
+        data += chunk;
+      });
+
+      response.on('end', () => {
+        resolve(JSON.parse(data));
+      });
+
+      response.on('error', (err) => {
+        reject(err);
+      });
+    });
+  });
 
   for (const entry of bootstrapData.services) {
     if (entry[0].includes(tld)) {
@@ -34,11 +50,27 @@ async function getRDAPServer(domain: string): Promise<string> {
   throw new Error(`No RDAP server found for TLD: ${tld}`);
 }
 
-async function performRDAPLookup(domain: string, retries = 3): Promise<any> {
+async function performRDAPLookup(domain, retries = 3) {
   try {
     const rdapServer = await getRDAPServer(domain);
-    const response = await axios.get(`${rdapServer}/domain/${domain}`);
-    return response.data;
+    const rdapResponse = await new Promise((resolve, reject) => {
+      https.get(`${rdapServer}/domain/${domain}`, (response) => {
+        let data = '';
+
+        response.on('data', (chunk) => {
+          data += chunk;
+        });
+
+        response.on('end', () => {
+          resolve(JSON.parse(data));
+        });
+
+        response.on('error', (err) => {
+          reject(err);
+        });
+      });
+    });
+    return rdapResponse;
   } catch (error) {
     if (retries > 0) {
       console.log(`Retrying RDAP lookup for ${domain}. Attempts left: ${retries - 1}`);
@@ -52,7 +84,7 @@ async function performRDAPLookup(domain: string, retries = 3): Promise<any> {
 }
 
 app.get('/api/lookup', async (req, res) => {
-  const domain = req.query.domain as string;
+  const domain = req.query.domain;
   if (!domain) {
     return res.status(400).json({ error: 'Domain parameter is required' });
   }
